@@ -6,7 +6,7 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,7 +111,7 @@ public class UserController {
         if (user.getBirthday() == null) {
             throw new ValidationException("Дата рождения должна быть указана");
         }
-        if (user.getBirthday().isAfter(Instant.now())) {
+        if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Дата рождения не может быть в будущем");
         }
     }
@@ -130,7 +130,7 @@ public class UserController {
             }
         }
         if (user.getBirthday() != null) {
-            if (user.getBirthday().isAfter(Instant.now())) {
+            if (user.getBirthday().isAfter(LocalDate.now())) {
                 throw new ValidationException("Дата рождения не может быть в будущем");
             }
         }

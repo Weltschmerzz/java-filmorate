@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.time.Instant;
+import java.time.LocalDate;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -16,7 +16,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("john@example.com");
         u.setLogin("john");
         u.setName("John");
-        u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1990, 1, 1));
 
         mockMvc.perform(
                         MockMvcRequestBuilders.post("/users")
@@ -35,7 +35,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("jane@example.com");
         u.setLogin("jane");
         u.setName("   ");
-        u.setBirthday(Instant.parse("1992-05-05T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1992, 5, 5));
 
         mockMvc.perform(
                         MockMvcRequestBuilders.post("/users")
@@ -51,7 +51,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("bad.email");
         u.setLogin("user1");
         u.setName("User");
-        u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1990, 1, 1));
 
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
@@ -66,7 +66,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("good@mail.com");
         u.setLogin("bad login");
         u.setName("User");
-        u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1990, 1, 1));
 
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
@@ -81,7 +81,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("fut@mail.com");
         u.setLogin("fut");
         u.setName("Future");
-        u.setBirthday(Instant.parse("2999-01-01T00:00:00Z")); // заведомо будущее
+        u.setBirthday(LocalDate.of(2990, 1, 1)); // заведомо будущее
 
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
@@ -104,7 +104,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("a@a.com");
         u.setLogin("a");
         u.setName("A");
-        u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1990, 1, 1));
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)
@@ -115,7 +115,7 @@ class UserControllerTest extends BaseControllerTest {
         u.setEmail("b@b.com");
         u.setLogin("b");
         u.setName("B");
-        u.setBirthday(Instant.parse("1991-01-01T00:00:00Z"));
+        u.setBirthday(LocalDate.of(1991, 1, 1));
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)

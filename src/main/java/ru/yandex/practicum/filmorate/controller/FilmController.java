@@ -6,7 +6,7 @@ import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -107,7 +107,7 @@ public class FilmController {
         if (film.getReleaseDate() == null) {
             throw new ValidationException("Дата релиза должна быть указана!");
         }
-        if (film.getReleaseDate().isBefore(java.time.Instant.parse("1895-12-28T00:00:00Z"))) {
+        if (film.getReleaseDate().isBefore(java.time.LocalDate.parse("1895-12-28"))) {
             throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года!");
         }
         if (film.getDuration() == null) {
@@ -126,7 +126,7 @@ public class FilmController {
             throw new ValidationException("Максимальная длина описания — 200 символов!");
         }
         if (film.getReleaseDate() != null) {
-            if (film.getReleaseDate().isBefore(Instant.parse("1895-12-28T00:00:00Z"))) {
+            if (film.getReleaseDate().isBefore(LocalDate.parse("1895-12-28"))) {
                 throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года!");
             }
         }
