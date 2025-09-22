@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
 
-import java.time.Duration;
 import java.time.Instant;
 
 
