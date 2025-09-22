@@ -99,34 +99,31 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void findAll_returnsCollection() throws Exception {
-        {
-            User u = new User();
-            u.setEmail("a@a.com");
-            u.setLogin("a");
-            u.setName("A");
-            u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
-            mockMvc.perform(
-                    MockMvcRequestBuilders.post("/users")
-                            .contentType(json)
-                            .content(toJson(u))
-            ).andExpect(status().isOk());
-        }
-        {
-            User u = new User();
-            u.setEmail("b@b.com");
-            u.setLogin("b");
-            u.setName("B");
-            u.setBirthday(Instant.parse("1991-01-01T00:00:00Z"));
-            mockMvc.perform(
-                    MockMvcRequestBuilders.post("/users")
-                            .contentType(json)
-                            .content(toJson(u))
-            ).andExpect(status().isOk());
-        }
-
+        // создаём двух валидных пользователей — без безымянных блоков
+        User u = new User();
+        u.setEmail("a@a.com");
+        u.setLogin("a");
+        u.setName("A");
+        u.setBirthday(Instant.parse("1990-01-01T00:00:00Z"));
         mockMvc.perform(
-                        MockMvcRequestBuilders.get("/users")
-                ).andExpect(status().isOk())
+                MockMvcRequestBuilders.post("/users")
+                        .contentType(json)
+                        .content(toJson(u))
+        ).andExpect(status().isOk());
+
+        u = new User();
+        u.setEmail("b@b.com");
+        u.setLogin("b");
+        u.setName("B");
+        u.setBirthday(Instant.parse("1991-01-01T00:00:00Z"));
+        mockMvc.perform(
+                MockMvcRequestBuilders.post("/users")
+                        .contentType(json)
+                        .content(toJson(u))
+        ).andExpect(status().isOk());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/users"))
+                .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
                 .andExpect(jsonPath("$[0].id").exists())
                 .andExpect(jsonPath("$[1].id").exists());
