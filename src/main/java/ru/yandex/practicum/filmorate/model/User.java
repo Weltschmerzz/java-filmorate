@@ -2,18 +2,16 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
 
-import java.time.Duration;
 import java.time.Instant;
 
-
 @Getter
-@ToString
 @Setter
+@ToString
 @EqualsAndHashCode(of = {"id"})
-public class Film {
+public class User {
     private Long id;
+    private String email;
+    private String login;
     private String name;
-    private String description;
-    Instant releaseDate;
-    Integer duration;
+    private Instant birthday;
 }
