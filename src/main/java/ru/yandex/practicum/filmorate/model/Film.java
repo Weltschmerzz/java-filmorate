@@ -4,7 +4,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-
 @Getter
 @ToString
 @Setter
@@ -13,6 +12,6 @@ public class Film {
     private Long id;
     private String name;
     private String description;
-    LocalDate releaseDate;
-    Integer duration;
+    private LocalDate releaseDate;
+    private Integer duration;
 }
