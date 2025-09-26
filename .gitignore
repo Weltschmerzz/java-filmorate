@@ -13,6 +13,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+checkstyle.xml
+suppressions.xml
 
 ### STS ###
 .apt_generated
