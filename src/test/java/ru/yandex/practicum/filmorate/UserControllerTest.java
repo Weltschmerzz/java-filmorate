@@ -22,7 +22,7 @@ class UserControllerTest extends BaseControllerTest {
                         MockMvcRequestBuilders.post("/users")
                                 .contentType(json)
                                 .content(toJson(u))
-                ).andExpect(status().isOk())
+                ).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.email").value("john@example.com"))
                 .andExpect(jsonPath("$.login").value("john"))
@@ -41,7 +41,7 @@ class UserControllerTest extends BaseControllerTest {
                         MockMvcRequestBuilders.post("/users")
                                 .contentType(json)
                                 .content(toJson(u))
-                ).andExpect(status().isOk())
+                ).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("jane"));
     }
 
@@ -109,7 +109,7 @@ class UserControllerTest extends BaseControllerTest {
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)
                         .content(toJson(u))
-        ).andExpect(status().isOk());
+        ).andExpect(status().isCreated());
 
         u = new User();
         u.setEmail("b@b.com");
@@ -120,7 +120,7 @@ class UserControllerTest extends BaseControllerTest {
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)
                         .content(toJson(u))
-        ).andExpect(status().isOk());
+        ).andExpect(status().isCreated());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users"))
                 .andExpect(status().isOk())

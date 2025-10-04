@@ -22,7 +22,7 @@ class FilmControllerTest extends BaseControllerTest {
                         MockMvcRequestBuilders.post("/films")
                                 .contentType(json)
                                 .content(toJson(f))
-                ).andExpect(status().isOk())
+                ).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.name").value("Inception"));
     }
