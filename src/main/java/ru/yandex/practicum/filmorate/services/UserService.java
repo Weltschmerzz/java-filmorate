@@ -119,10 +119,6 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        if (!user.getFriends().contains(friendId) || !friend.getFriends().contains(userId)) {
-            throw new NotFoundException("Указанные пользователи не друзья");
-        }
-
         boolean update1 = user.getFriends().remove(friendId);
         boolean update2 = friend.getFriends().remove(userId);
 
