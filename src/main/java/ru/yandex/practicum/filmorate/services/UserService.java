@@ -1,52 +1,51 @@
 package ru.yandex.practicum.filmorate.services;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    private final Map<Long, User> users = new HashMap<>();
-    private Long idCounter = 1L;
-    DomainValidator<User> validator = new UserValidator();
+    private final UserStorage userStorage;
+    private final DomainValidator<User> validator = new UserValidator();
 
     public User create(User user) {
-        log.info("Запрос на создание пользователя получен {}", user);
-        validator.validateCreate(user);
-
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
 
-        Long id = generateNextId();
-        user.setId(id);
-        users.put(id, user);
-        log.info("Запрос на создание пользователя выполнен {}", user);
-        return user;
+        validator.validateCreate(user);
+        User newUser = userStorage.create(user);
+
+        log.info("Создан пользователь через сервис: {}", newUser);
+        return newUser;
     }
 
     public User update(User newUser) {
-        log.info("Запрос на обновление пользователя получен: {}", newUser);
         if (newUser == null) {
+            log.info("Тело запроса не должно быть пустым!");
             throw new ValidationException("Тело запроса не должно быть пустым!");
         }
         Long id = newUser.getId();
         if (id == null) {
+            log.info("id должен быть указан!");
             throw new ValidationException("id должен быть указан!");
         }
-        User existing = users.get(id);
+        User existing = userStorage.getById(newUser.getId());
         if (existing == null) {
+            log.info(String.format("Не найден пользователь с id: %d", id));
             throw new NotFoundException(String.format("Не найден пользователь с id: %d", id));
         }
 
@@ -69,23 +68,20 @@ public class UserService {
             existing.setBirthday(newUser.getBirthday());
         }
 
-        users.put(id, existing);
-        log.info("Запрос на обновление пользователя выполнен: {}", newUser);
-        return existing;
+        log.info("Обновлён пользователь через сервис: {}", existing);
+        return userStorage.update(existing);
     }
 
     public Collection<User> findAll() {
-        log.info("Запрос на вывод всех пользователей");
-        return users.values();
+        return userStorage.findAll();
     }
 
 
     public User getUserById(Long id) {
-        log.info("Запрос на вывод пользователя по id получен: {}", id);
         if (id == null) {
             throw new ValidationException("id должен быть указан");
         }
-        User user = users.get(id);
+        User user = userStorage.getById(id);
         if (Objects.isNull(user)) {
             throw new NotFoundException(String.format("Не найден пользователь с id: %d", id));
         }
@@ -93,8 +89,73 @@ public class UserService {
         return user;
     }
 
-    private Long generateNextId() {
-        return idCounter++;
+    public Long deleteById(Long id) {
+        log.info("Запрос на удаление пользователя по id: {}", id);
+        return userStorage.deleteById(id);
+    }
+
+    public User addFriend(Long userId, Long friendId) {
+        if (Objects.equals(userId, friendId)) {
+            throw new ValidationException("Нельзя добавить самого себя в друзья");
+        }
+        User user = userStorage.getById(userId);
+        User friend = userStorage.getById(friendId);
+
+        boolean update1 = user.getFriends().add(friendId);
+        boolean update2 = friend.getFriends().add(userId);
+
+        if (update1) userStorage.update(user);
+        if (update2) userStorage.update(friend);
+
+        log.info("Пользователь {}, добавил в друзья пользователя {}", user.getId(), friend.getId());
+        return friend;
+    }
+
+    public User deleteFriend(Long userId, Long friendId) {
+        if (Objects.equals(userId, friendId)) {
+            throw new ValidationException("Нельзя удалить самого себя из друзей");
+        }
+
+        User user = userStorage.getById(userId);
+        User friend = userStorage.getById(friendId);
+
+        if (!user.getFriends().contains(friendId) || !friend.getFriends().contains(userId)) {
+            throw new NotFoundException("Указанные пользователи не друзья");
+        }
+
+        boolean update1 = user.getFriends().remove(friendId);
+        boolean update2 = friend.getFriends().remove(userId);
+
+        if (update1) userStorage.update(user);
+        if (update2) userStorage.update(friend);
+
+        log.info("Пользователь {}, удалил из друзей пользователя {}", user.getId(), friend.getId());
+        return friend;
+    }
+
+    public List<User> getFriends(Long userId) {
+        log.info("Запрос на вывод всех друзей пользователя {}", userId);
+        return userStorage.getById(userId).getFriends()
+                .stream()
+                .map(userStorage::getById)
+                .toList();
+    }
+
+    public List<User> getCommonFriends(Long userid, Long otherUserId) {
+        User user = userStorage.getById(userid);
+        User otherUser = userStorage.getById(otherUserId);
+
+        Set<Long> commonFriends = new HashSet<>(user.getFriends());
+        commonFriends.retainAll(otherUser.getFriends());
+
+        if (commonFriends.isEmpty()) {
+            throw new NotFoundException("У пользователей нет общих друзей!");
+        }
+
+        log.info("Запрос на вывод общих друзей пользователя {} и {}", userid, otherUserId);
+        return commonFriends.stream()
+                .map(userStorage::getById)
+                .toList();
     }
 }
 

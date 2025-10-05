@@ -33,6 +33,7 @@ public class FilmValidator implements DomainValidator<Film> {
 
     @Override
     public void validateUpdate(Film film) {
+
         if (film.getName() != null && film.getName().isBlank()) {
             throw new ValidationException("Название не может быть пустым!");
         }
