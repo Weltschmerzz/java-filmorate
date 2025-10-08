@@ -5,16 +5,16 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.services.FilmService;
 
 import java.util.Collection;
-import java.util.Map;
-
 
 @Slf4j
 @RestController
+@Validated
 @RequiredArgsConstructor
 @RequestMapping("/films")
 public class FilmController {
@@ -33,9 +33,8 @@ public class FilmController {
     }
 
     @DeleteMapping("/{id}")
-    public Map<String, String> delete(@PathVariable @Positive Long id) {
+    public void delete(@PathVariable @Positive Long id) {
         filmService.deleteById(id);
-        return Map.of("Удален филь с id ", String.valueOf(id));
     }
 
     @GetMapping
@@ -44,22 +43,20 @@ public class FilmController {
     }
 
     @GetMapping("/{id}")
-    public Film getFilmById(@PathVariable Long id) {
+    public Film getFilmById(@PathVariable @Positive Long id) {
         return filmService.getFilmById(id);
     }
 
     @PutMapping("/{id}/like/{userId}")
-    public Map<String, String> addLike(@PathVariable @Positive Long id,
-                                       @PathVariable @Positive Long userId) {
-        Film film = filmService.addLike(id, userId);
-        return Map.of("Пользователь с id: " + userId + " поставил лайк фильму ", String.valueOf(film.getName()));
+    public void addLike(@PathVariable @Positive Long id,
+                        @PathVariable @Positive Long userId) {
+        filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    public Map<String, String> removeLike(@PathVariable @Positive Long id,
-                                          @PathVariable @Positive Long userId) {
-        Film film = filmService.removeLike(id, userId);
-        return Map.of("Пользователь с id: " + userId + " удалил лайк фильму ", String.valueOf(film.getName()));
+    public void removeLike(@PathVariable @Positive Long id,
+                           @PathVariable @Positive Long userId) {
+        filmService.removeLike(id, userId);
     }
 
     @GetMapping(value = "/popular", params = "count")

@@ -83,53 +83,34 @@ public class FilmService {
         filmStorage.deleteById(id);
     }
 
-    public Film addLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId);
-        User user = userService.getUserById(userId);
+    public void addLike(Long filmId, Long userId) {
+        LikeContext lc = likeValidate(filmId, userId);
 
-        if (film == null) {
-            throw new NotFoundException("Фильм с id " + filmId + "не найден!");
-        }
-        if (user == null) {
-            throw new NotFoundException("Пользователь с id " + userId + "не найден!");
-        }
-
-        boolean filmChanged = film.getLikes().add(userId);
-        boolean userChanged = user.getLikes().add(filmId);
+        boolean filmChanged = lc.film().getLikes().add(userId);
+        boolean userChanged = lc.user().getLikes().add(filmId);
 
         if (!filmChanged && !userChanged) {
-            return film;
+            return;
         }
 
-        filmStorage.update(film);
-        userService.update(user);
-
-        log.info("Запрос на добавление лайка от пользователя {} фильму {}", user, film);
-        return film;
+        filmStorage.update(lc.film());
+        userService.update(lc.user());
+        log.info("Запрос на добавление лайка от пользователя {} фильму {}", userId, filmId);
     }
 
-    public Film removeLike(Long filmId, Long userId) {
-        Film film = filmStorage.getById(filmId);
-        User user = userService.getUserById(userId);
+    public void removeLike(Long filmId, Long userId) {
+        LikeContext lc = likeValidate(filmId, userId);
 
-        if (film == null) {
-            throw new NotFoundException("Фильм с id " + filmId + "не найден!");
-        }
-        if (user == null) {
-            throw new NotFoundException("Пользователь с id " + userId + "не найден!");
-        }
-
-        boolean filmChanged = film.getLikes().remove(userId);
-        boolean userChanged = user.getLikes().remove(filmId);
+        boolean filmChanged = lc.film().getLikes().remove(userId);
+        boolean userChanged = lc.user().getLikes().remove(filmId);
 
         if (!filmChanged && !userChanged) {
-            return film;
+            return;
         }
 
-        filmStorage.update(film);
-        userService.update(user);
-        log.info("Запрос на удаление лайка пользователя {} фильму {}", user, film);
-        return film;
+        filmStorage.update(lc.film());
+        userService.update(lc.user());
+        log.info("Запрос на удаление лайка пользователя {} фильму {}", userId, filmId);
     }
 
     public Collection<Film> getTopFilms(int count) {
@@ -140,4 +121,22 @@ public class FilmService {
                 .toList();
     }
 
+    public LikeContext likeValidate(Long filmId, Long userId) {
+        Film film;
+        try {
+            film = filmStorage.getById(filmId);
+        } catch (NotFoundException e) {
+            throw new NotFoundException("Фильм с id " + filmId + " не найден!");
+        }
+        User user;
+        try {
+            user = userService.getUserById(userId);
+        } catch (NotFoundException e) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден!");
+        }
+        return new LikeContext(film, user);
+    }
+
+    public record LikeContext(Film film, User user) {
+    }
 }

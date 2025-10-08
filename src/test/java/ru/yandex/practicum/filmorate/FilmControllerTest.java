@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -96,9 +95,7 @@ class FilmControllerTest extends BaseControllerTest {
                 "deckard@example.com", "deckard", "Rick Deckard", LocalDate.of(1990, 1, 1));
 
         mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$.*", Matchers.hasItem("Blade Runner")));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -129,9 +126,7 @@ class FilmControllerTest extends BaseControllerTest {
 
         // Снимаем лайк
         mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$.*", Matchers.hasItem("Inception")));
+                .andExpect(status().isOk());
 
         // Повторный DELETE — идемпотентен
         mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))

@@ -1,14 +1,11 @@
 package ru.yandex.practicum.filmorate;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class UserControllerTest extends BaseControllerTest {
@@ -219,16 +216,11 @@ class UserControllerTest extends BaseControllerTest {
     void deleteUser_ok() throws Exception {
         long id = createUserAndGetId("john@example.com", "john", "John", LocalDate.of(1990, 1, 1));
 
-        MvcResult res = mockMvc.perform(
+        mockMvc.perform(
                         MockMvcRequestBuilders.delete("/users/{id}", id)
                 )
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andReturn();
-
-        JsonNode root = objectMapper.readTree(res.getResponse().getContentAsString());
-        String value = root.fields().next().getValue().asText(); // единственное значение в Map
-        assertEquals("id: " + id + ", userName: John", value);
+                .andExpect(content().string(""));
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}", id))
                 .andExpect(status().isNotFound());

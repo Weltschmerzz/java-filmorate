@@ -89,12 +89,12 @@ public class UserService {
         return user;
     }
 
-    public Long deleteById(Long id) {
+    public void deleteById(Long id) {
         log.info("Запрос на удаление пользователя по id: {}", id);
-        return userStorage.deleteById(id);
+        userStorage.deleteById(id);
     }
 
-    public User addFriend(Long userId, Long friendId) {
+    public void addFriend(Long userId, Long friendId) {
         if (Objects.equals(userId, friendId)) {
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
@@ -108,10 +108,9 @@ public class UserService {
         if (update2) userStorage.update(friend);
 
         log.info("Пользователь {}, добавил в друзья пользователя {}", user.getId(), friend.getId());
-        return friend;
     }
 
-    public User deleteFriend(Long userId, Long friendId) {
+    public void deleteFriend(Long userId, Long friendId) {
         if (Objects.equals(userId, friendId)) {
             throw new ValidationException("Нельзя удалить самого себя из друзей");
         }
@@ -126,7 +125,6 @@ public class UserService {
         if (update2) userStorage.update(friend);
 
         log.info("Пользователь {}, удалил из друзей пользователя {}", user.getId(), friend.getId());
-        return friend;
     }
 
     public List<User> getFriends(Long userId) {
