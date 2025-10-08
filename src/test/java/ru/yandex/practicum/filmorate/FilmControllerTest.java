@@ -86,4 +86,84 @@ class FilmControllerTest extends BaseControllerTest {
                         .content(toJson(f))
         ).andExpect(status().isBadRequest());
     }
+
+    @Test
+    void addLike_ok() throws Exception {
+        long filmId = createFilmAndGetId(
+                "Blade Runner", "desc", LocalDate.of(2000, 1, 1), 100);
+        long userId = createUserAndGetId(
+                "deckard@example.com", "deckard", "Rick Deckard", LocalDate.of(1990, 1, 1));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void addLike_idempotent() throws Exception {
+        long filmId = createFilmAndGetId(
+                "Interstellar", "desc", LocalDate.of(2000, 1, 1), 100);
+        long userId = createUserAndGetId(
+                "coop@example.com", "coop", "Cooper", LocalDate.of(1990, 1, 1));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+
+        // Повторный PUT — не должен падать
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void removeLike_ok() throws Exception {
+        long filmId = createFilmAndGetId(
+                "Inception", "desc", LocalDate.of(2000, 1, 1), 100);
+        long userId = createUserAndGetId(
+                "cobb@example.com", "cobb", "Cobb", LocalDate.of(1990, 1, 1));
+
+        // Ставим лайк
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+
+        // Снимаем лайк
+        mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+
+        // Повторный DELETE — идемпотентен
+        mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getTopFilms_ok_sortedAndLimited() throws Exception {
+        // Фильмы
+        long f1 = createFilmAndGetId("A", "d", LocalDate.of(2000, 1, 1), 100);
+        long f2 = createFilmAndGetId("B", "d", LocalDate.of(2000, 1, 1), 100);
+        long f3 = createFilmAndGetId("C", "d", LocalDate.of(2000, 1, 1), 100);
+
+        // Пользователи
+        long u1 = createUserAndGetId("u1@example.com", "u1", "U1", LocalDate.of(1990, 1, 1));
+        long u2 = createUserAndGetId("u2@example.com", "u2", "U2", LocalDate.of(1990, 1, 1));
+
+        // Лайки: A — 2 лайка; B — 1 лайк; C — 0
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", f1, u1))
+                .andExpect(status().isOk());
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", f1, u2))
+                .andExpect(status().isOk());
+        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", f2, u1))
+                .andExpect(status().isOk());
+
+        // Запрашиваем топ-2: ожидаем порядок A, B
+        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular").param("count", "2"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(json))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("A"))
+                .andExpect(jsonPath("$[1].name").value("B"));
+    }
+
+    @Test
+    void getTopFilms_countNonPositive_shouldFail() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular").param("count", "0"))
+                .andExpect(status().isBadRequest());
+    }
 }
