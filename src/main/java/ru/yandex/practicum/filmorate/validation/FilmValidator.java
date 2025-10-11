@@ -5,9 +5,11 @@ import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+
 
 @Component
 @RequiredArgsConstructor
@@ -38,23 +40,17 @@ public class FilmValidator implements DomainValidator<Film> {
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
         }
-        if (film.getRating() == null || film.getRating().isBlank()) {
-            throw new ValidationException("Рейтинг должен быть указан!");
+        if (film.getMpa() == null || film.getMpa().getId() == null) {
+            throw new ValidationException("Рейтинг MPA должен быть указан!");
         }
-        if (film.getGenres() == null || film.getGenres().isEmpty()) {
-            throw new ValidationException("id жанра должен быть указан!");
+        if (!filmStorage.isMpaExist(film.getMpa().getId())) {
+            throw new NotFoundException("Недопустимое значений рейтинга: " + film.getMpa().getId());
         }
-        if (!filmStorage.isRatingExist(film.getRating())) {
-            throw new NotFoundException("Недопустимое значений рейтинга: " + film.getRating());
-        }
-
-        for (Long id : film.getGenres()) {
-            if (id == null) {
+        for (Genre g : film.getGenres()) {
+            if (g == null || g.getId() == null)
                 throw new ValidationException("id жанра не может быть null.");
-            }
-            if (!filmStorage.isGenreExist(id)) {
-                throw new NotFoundException("Жанр не найден по указанному id: " + id);
-            }
+            if (!filmStorage.isGenreExist(g.getId()))
+                throw new NotFoundException("Жанр не найден по id: " + g.getId());
         }
     }
 

@@ -6,15 +6,16 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,8 +28,9 @@ public class FilmService {
 
     public Film create(Film film) {
         validator.validateCreate(film);
-        log.info("Запрос на создание фильма: {}", film);
-        return filmStorage.create(film);
+        Film normalized = normalize(film);
+        log.info("Запрос на создание фильма: {}", normalized);
+        return filmStorage.create(normalized);
     }
 
     public Collection<Film> findAll() {
@@ -75,10 +77,10 @@ public class FilmService {
             existedFilm.setDuration(newFilm.getDuration());
         }
         if (newFilm.getGenres() != null) {
-            existedFilm.setGenres(newFilm.getGenres());
+            existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
         }
-        if (newFilm.getRating() != null) {
-            existedFilm.setRating(newFilm.getRating());
+        if (newFilm.getMpa() != null) {
+            existedFilm.setMpa(newFilm.getMpa());
         }
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);
@@ -145,5 +147,52 @@ public class FilmService {
     }
 
     public record LikeContext(Film film, User user) {
+    }
+
+    public Genre getGenre(Long id) {
+        if (filmStorage.getGenreById(id) == null) {
+            throw new NotFoundException("Жанр не найден id=" + id);
+        }
+        return filmStorage.getGenreById(id);
+    }
+
+    public Collection<Genre> getAllGener() {
+        return filmStorage.getAllGenres().values();
+    }
+
+    public Mpa getMpa(Long id) {
+        if (filmStorage.getMpaById(id) == null) {
+            throw new NotFoundException("MPA не найден id=" + id);
+        }
+        return filmStorage.getMpaById(id);
+    }
+
+    public Collection<Mpa> getAllMpa() {
+        return filmStorage.getAllMpa().values();
+    }
+
+    private Film normalize(Film film) {
+        Film copy = new Film();
+        copy.setId(film.getId());
+        copy.setName(film.getName());
+        copy.setDescription(film.getDescription());
+        copy.setReleaseDate(film.getReleaseDate());
+        copy.setDuration(film.getDuration());
+        copy.setMpa(filmStorage.getMpaById(film.getMpa().getId()));
+        copy.setGenres(normalizeGenres(film.getGenres()));
+        copy.setLikes(film.getLikes());
+        return copy;
+    }
+
+    private LinkedHashSet<Genre> normalizeGenres(Set<Genre> input) {
+        if (input == null || input.isEmpty()) return new LinkedHashSet<>();
+        return input.stream()
+                .filter(Objects::nonNull)
+                .map(g -> filmStorage.getGenreById(g.getId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingLong(Genre::getId))),
+                        LinkedHashSet::new
+                ));
     }
 }

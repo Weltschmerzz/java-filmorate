@@ -103,15 +103,17 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        boolean update1 = user.getFriends().add(friendId);
+        boolean update2 = friend.getFriends().add(userId);
 
-        userStorage.setFriendConnection(userId, friendId, FriendshipStatus.CONFIRMED);
-        userStorage.setFriendConnection(friendId, userId, FriendshipStatus.CONFIRMED);
-
-        userStorage.update(user);
-        userStorage.update(friend);
-
+        if (update1) {
+            userStorage.setFriendConnection(userId, friendId, FriendshipStatus.CONFIRMED);
+            userStorage.update(user);
+        }
+        if (update2) {
+            userStorage.setFriendConnection(friendId, userId, FriendshipStatus.CONFIRMED);
+            userStorage.update(friend);
+        }
         log.info("Пользователь {}, добавил в друзья пользователя {}", user.getId(), friend.getId());
     }
 
@@ -123,15 +125,17 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+        boolean update1 = user.getFriends().remove(friendId);
+        boolean update2 = friend.getFriends().remove(userId);
 
-        userStorage.removeFriendConnection(userId, friendId);
-        userStorage.removeFriendConnection(friendId, userId);
-
-        userStorage.update(user);
-        userStorage.update(friend);
-
+        if (update1) {
+            userStorage.removeFriendConnection(userId, friendId);
+            userStorage.update(user);
+        }
+        if (update2) {
+            userStorage.removeFriendConnection(friendId, userId);
+            userStorage.update(friend);
+        }
         log.info("Пользователь {}, удалил из друзей пользователя {}", user.getId(), friend.getId());
     }
 

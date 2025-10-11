@@ -16,7 +16,6 @@ public class InMemoryUserStorage implements UserStorage {
     private Long idCounter = 1L;
     private final Map<Long, Map<Long, FriendshipStatus>> friendships = new HashMap<>();
 
-
     @Override
     public User create(User user) {
         long id = idCounter++;
