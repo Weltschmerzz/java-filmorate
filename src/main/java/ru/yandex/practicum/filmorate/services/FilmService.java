@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
@@ -20,8 +21,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class FilmService {
 
-    private final FilmStorage filmStorage;
-    private final DomainValidator<Film> validator = new FilmValidator();
+    private final FilmStorage filmStorage = new InMemoryFilmStorage();
+    private final DomainValidator<Film> validator = new FilmValidator(filmStorage);
     private final UserService userService;
 
     public Film create(Film film) {
@@ -72,6 +73,12 @@ public class FilmService {
         }
         if (newFilm.getDuration() != null) {
             existedFilm.setDuration(newFilm.getDuration());
+        }
+        if (newFilm.getGenres() != null) {
+            existedFilm.setGenres(newFilm.getGenres());
+        }
+        if (newFilm.getRating() != null) {
+            existedFilm.setRating(newFilm.getRating());
         }
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);

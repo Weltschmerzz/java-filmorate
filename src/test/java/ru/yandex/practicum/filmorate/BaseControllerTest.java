@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,8 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -76,24 +80,44 @@ public abstract class BaseControllerTest {
         return node.get("id").asLong();
     }
 
-    public long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration) throws Exception {
-        Film f = new Film();
-        f.setName(name);
-        f.setDescription(description);
-        f.setReleaseDate(releaseDate);
-        f.setDuration(duration);
+    protected long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration) throws Exception {
+        return createFilmAndGetId(name, description, releaseDate, duration, "PG", new LinkedHashSet<>(Set.of(1L)));
+    }
 
-        MvcResult res = mockMvc.perform(
+    protected long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration,
+                                      String rating, Set<Long> genres) throws Exception {
+        String payload = filmJson(name, description, releaseDate, duration, rating, genres);
+
+        String resp = mockMvc.perform(
                         MockMvcRequestBuilders.post("/films")
                                 .contentType(json)
-                                .content(toJson(f))
+                                .content(payload)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(json))
                 .andExpect(jsonPath("$.id").exists())
-                .andReturn();
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-        JsonNode node = objectMapper.readTree(res.getResponse().getContentAsString());
+        JsonNode node = objectMapper.readTree(resp);
         return node.get("id").asLong();
+    }
+
+    protected String filmJson(String name, String description, LocalDate releaseDate, Integer duration,
+                              String rating, Set<Long> genres) throws Exception {
+        ObjectNode node = objectMapper.createObjectNode();
+        if (name != null) node.put("name", name);
+        if (description != null) node.put("description", description);
+        if (releaseDate != null) node.put("releaseDate", releaseDate.toString());
+        if (duration != null) node.put("duration", duration);
+        if (rating != null) node.put("rating", rating);
+        if (genres != null) {
+            ArrayNode arr = node.putArray("genres");
+            for (Long id : genres) {
+                if (id == null) arr.addNull(); else arr.add(id);
+            }
+        }
+        return objectMapper.writeValueAsString(node);
     }
 }

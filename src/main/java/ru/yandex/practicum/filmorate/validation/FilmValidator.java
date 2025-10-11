@@ -1,11 +1,20 @@
 package ru.yandex.practicum.filmorate.validation;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
 
+@Component
+@RequiredArgsConstructor
 public class FilmValidator implements DomainValidator<Film> {
+
+    private final FilmStorage filmStorage;
+
     @Override
     public void validateCreate(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
@@ -28,6 +37,24 @@ public class FilmValidator implements DomainValidator<Film> {
         }
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
+        }
+        if (film.getRating() == null || film.getRating().isBlank()) {
+            throw new ValidationException("Рейтинг должен быть указан!");
+        }
+        if (film.getGenres() == null || film.getGenres().isEmpty()) {
+            throw new ValidationException("id жанра должен быть указан!");
+        }
+        if (!filmStorage.isRatingExist(film.getRating())) {
+            throw new NotFoundException("Недопустимое значений рейтинга: " + film.getRating());
+        }
+
+        for (Long id : film.getGenres()) {
+            if (id == null) {
+                throw new ValidationException("id жанра не может быть null.");
+            }
+            if (!filmStorage.isGenreExist(id)) {
+                throw new NotFoundException("Жанр не найден по указанному id: " + id);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.util.*;
 
@@ -13,6 +14,15 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     private final Map<Long, Film> films = new HashMap<>();
     private Long idCounter = 1L;
+    private final Map<Long, Genre> data = new LinkedHashMap<>() {{
+        put(1L, new Genre(1L, "Комедия"));
+        put(2L, new Genre(2L, "Драма"));
+        put(3L, new Genre(3L, "Мультфильм"));
+        put(4L, new Genre(4L, "Триллер"));
+        put(5L, new Genre(5L, "Документальный"));
+        put(6L, new Genre(6L, "Боевик"));
+    }};
+    private final List<String> acceptableRatingsList = Arrays.asList("G", "PG", "PG-13", "R", "NC-17");
 
     @Override
     public Film create(Film film) {
@@ -62,5 +72,15 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Collection<Film> findAll() {
         return new ArrayList<>(films.values());
+    }
+
+    @Override
+    public boolean isGenreExist(Long id) {
+        return data.containsKey(id);
+    }
+
+    @Override
+    public boolean isRatingExist(String rating) {
+        return acceptableRatingsList.contains(rating);
     }
 }

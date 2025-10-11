@@ -15,4 +15,7 @@ public interface FilmStorage {
 
     Collection<Film> findAll();
 
+    boolean isGenreExist(Long id);
+
+    boolean isRatingExist(String rating);
 }
