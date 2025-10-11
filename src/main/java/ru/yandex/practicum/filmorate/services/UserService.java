@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
@@ -98,14 +99,18 @@ public class UserService {
         if (Objects.equals(userId, friendId)) {
             throw new ValidationException("Нельзя добавить самого себя в друзья");
         }
+
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        boolean update1 = user.getFriends().add(friendId);
-        boolean update2 = friend.getFriends().add(userId);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId);
 
-        if (update1) userStorage.update(user);
-        if (update2) userStorage.update(friend);
+        userStorage.setFriendConnection(userId, friendId, FriendshipStatus.CONFIRMED);
+        userStorage.setFriendConnection(friendId, userId, FriendshipStatus.CONFIRMED);
+
+        userStorage.update(user);
+        userStorage.update(friend);
 
         log.info("Пользователь {}, добавил в друзья пользователя {}", user.getId(), friend.getId());
     }
@@ -118,11 +123,14 @@ public class UserService {
         User user = userStorage.getById(userId);
         User friend = userStorage.getById(friendId);
 
-        boolean update1 = user.getFriends().remove(friendId);
-        boolean update2 = friend.getFriends().remove(userId);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
 
-        if (update1) userStorage.update(user);
-        if (update2) userStorage.update(friend);
+        userStorage.removeFriendConnection(userId, friendId);
+        userStorage.removeFriendConnection(friendId, userId);
+
+        userStorage.update(user);
+        userStorage.update(friend);
 
         log.info("Пользователь {}, удалил из друзей пользователя {}", user.getId(), friend.getId());
     }
