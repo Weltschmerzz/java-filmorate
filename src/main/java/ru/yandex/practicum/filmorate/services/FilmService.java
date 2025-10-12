@@ -64,24 +64,12 @@ public class FilmService {
 
         validator.validateUpdate(newFilm);
 
-        if (newFilm.getName() != null) {
-            existedFilm.setName(newFilm.getName());
-        }
-        if (newFilm.getDescription() != null) {
-            existedFilm.setDescription(newFilm.getDescription());
-        }
-        if (newFilm.getReleaseDate() != null) {
-            existedFilm.setReleaseDate(newFilm.getReleaseDate());
-        }
-        if (newFilm.getDuration() != null) {
-            existedFilm.setDuration(newFilm.getDuration());
-        }
-        if (newFilm.getGenres() != null) {
-            existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
-        }
-        if (newFilm.getMpa() != null) {
-            existedFilm.setMpa(newFilm.getMpa());
-        }
+        if (newFilm.getName() != null) existedFilm.setName(newFilm.getName());
+        if (newFilm.getDescription() != null) existedFilm.setDescription(newFilm.getDescription());
+        if (newFilm.getReleaseDate() != null) existedFilm.setReleaseDate(newFilm.getReleaseDate());
+        if (newFilm.getDuration() != null) existedFilm.setDuration(newFilm.getDuration());
+        if (newFilm.getGenres() != null) existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
+        if (newFilm.getMpa() != null) existedFilm.setMpa(newFilm.getMpa());
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);
         return filmStorage.update(existedFilm);
@@ -189,7 +177,6 @@ public class FilmService {
         return input.stream()
                 .filter(Objects::nonNull)
                 .map(g -> filmStorage.getGenreById(g.getId()))
-                .filter(Objects::nonNull)
                 .collect(Collectors.collectingAndThen(
                         Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingLong(Genre::getId))),
                         LinkedHashSet::new

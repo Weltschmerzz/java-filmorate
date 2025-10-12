@@ -44,7 +44,7 @@ public class FilmValidator implements DomainValidator<Film> {
             throw new ValidationException("Рейтинг MPA должен быть указан!");
         }
         if (!filmStorage.isMpaExist(film.getMpa().getId())) {
-            throw new NotFoundException("Недопустимое значений рейтинга: " + film.getMpa().getId());
+            throw new NotFoundException("Недопустимое значений рейтинга MPA: " + film.getMpa().getId());
         }
         for (Genre g : film.getGenres()) {
             if (g == null || g.getId() == null)

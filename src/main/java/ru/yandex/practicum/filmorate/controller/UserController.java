@@ -76,8 +76,6 @@ public class UserController {
         return userService.getFriends(id);
     }
 
-
-
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable
                                        @Positive(message = "id пользователя должен быть > 0")
