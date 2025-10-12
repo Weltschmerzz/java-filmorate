@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 
 @Component
@@ -40,18 +41,16 @@ public class FilmValidator implements DomainValidator<Film> {
         if (film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
         }
-        if (film.getMpa() == null || film.getMpa().getId() == null) {
-            throw new ValidationException("Рейтинг MPA должен быть указан!");
+
+        if (film.getMpa() != null) {
+            if (film.getMpa().getId() == null) {
+                throw new ValidationException("id рейтинга MPA не может быть null.");
+            }
+            if (!filmStorage.isMpaExist(film.getMpa().getId())) {
+                throw new NotFoundException("Недопустимый MPA id=" + film.getMpa().getId());
+            }
         }
-        if (!filmStorage.isMpaExist(film.getMpa().getId())) {
-            throw new NotFoundException("Недопустимое значений рейтинга MPA: " + film.getMpa().getId());
-        }
-        for (Genre g : film.getGenres()) {
-            if (g == null || g.getId() == null)
-                throw new ValidationException("id жанра не может быть null.");
-            if (!filmStorage.isGenreExist(g.getId()))
-                throw new NotFoundException("Жанр не найден по id: " + g.getId());
-        }
+        validateGenresIfPresent(film.getGenres());
     }
 
     @Override
@@ -72,6 +71,17 @@ public class FilmValidator implements DomainValidator<Film> {
             if (film.getDuration() <= 0) {
                 throw new ValidationException("Продолжительность фильма должна быть положительным числом!");
             }
+        }
+        validateGenresIfPresent(film.getGenres());
+    }
+
+    private void validateGenresIfPresent(Set<Genre> genres) {
+        if (genres == null || genres.isEmpty()) return;
+        for (Genre g : genres) {
+            if (g == null || g.getId() == null)
+                throw new ValidationException("id жанра не может быть null.");
+            if (!filmStorage.isGenreExist(g.getId()))
+                throw new NotFoundException("Жанр не найден по id: " + g.getId());
         }
     }
 }

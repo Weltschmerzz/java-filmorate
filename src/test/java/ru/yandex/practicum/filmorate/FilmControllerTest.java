@@ -54,19 +54,6 @@ class FilmControllerTest extends BaseControllerTest {
     }
 
     @Test
-    void createFilm_missingMpa_shouldReturn400() throws Exception {
-        ObjectNode body = objectMapper.createObjectNode();
-        body.put("name", "n");
-        body.put("description", "d");
-        body.put("releaseDate", "2000-01-01");
-        body.put("duration", 100);
-        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
-
-        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void createFilm_emptyGenres_ok() throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "n");
