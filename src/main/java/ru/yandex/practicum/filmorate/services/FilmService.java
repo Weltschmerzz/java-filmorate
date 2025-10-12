@@ -69,7 +69,10 @@ public class FilmService {
         if (newFilm.getReleaseDate() != null) existedFilm.setReleaseDate(newFilm.getReleaseDate());
         if (newFilm.getDuration() != null) existedFilm.setDuration(newFilm.getDuration());
         if (newFilm.getGenres() != null) existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
-        if (newFilm.getMpa() != null) existedFilm.setMpa(filmStorage.getMpaById(newFilm.getMpa().getId()));
+        if (newFilm.getMpa() != null) {
+            Mpa canon = filmStorage.getMpaById(newFilm.getMpa().getId());
+            existedFilm.setMpa(canon);
+        }
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);
         return filmStorage.update(existedFilm);
@@ -166,7 +169,9 @@ public class FilmService {
         copy.setDescription(film.getDescription());
         copy.setReleaseDate(film.getReleaseDate());
         copy.setDuration(film.getDuration());
-        copy.setMpa(filmStorage.getMpaById(film.getMpa().getId()));
+        if (film.getMpa() != null) {
+            copy.setMpa(filmStorage.getMpaById(film.getMpa().getId()));
+        }
         copy.setGenres(normalizeGenres(film.getGenres()));
         copy.setLikes(film.getLikes());
         return copy;
