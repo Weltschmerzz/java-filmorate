@@ -57,7 +57,7 @@ public class FilmService {
             throw new ValidationException("id должен быть указан!");
         }
 
-        Film existedFilm = filmStorage.getById(newFilm.getId());
+        Film existedFilm = filmStorage.getById(id);
         if (Objects.isNull(existedFilm)) {
             throw new NotFoundException(String.format("Не найден фильм с id: %d", id));
         }
@@ -69,7 +69,7 @@ public class FilmService {
         if (newFilm.getReleaseDate() != null) existedFilm.setReleaseDate(newFilm.getReleaseDate());
         if (newFilm.getDuration() != null) existedFilm.setDuration(newFilm.getDuration());
         if (newFilm.getGenres() != null) existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
-        if (newFilm.getMpa() != null) existedFilm.setMpa(newFilm.getMpa());
+        if (newFilm.getMpa() != null) existedFilm.setMpa(filmStorage.getMpaById(newFilm.getMpa().getId()));
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);
         return filmStorage.update(existedFilm);

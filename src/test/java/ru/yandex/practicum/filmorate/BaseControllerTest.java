@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -38,7 +39,6 @@ public abstract class BaseControllerTest {
 
     @BeforeEach
     void clean() throws Exception {
-        // Удаляем ВСЕ фильмы
         MvcResult filmsRes = mockMvc.perform(MockMvcRequestBuilders.get("/films"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -79,28 +79,43 @@ public abstract class BaseControllerTest {
         return node.get("id").asLong();
     }
 
-    protected long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration) throws Exception {
-        return createFilmAndGetId(name, description, releaseDate, duration, "PG", new LinkedHashSet<>(Set.of(1L)));
-    }
+    protected long createFilmAndGetId(
+            String name,
+            String description,
+            LocalDate releaseDate,
+            int duration,
+            int mpaId,
+            LinkedHashSet<Long> genreIds
+    ) throws Exception {
 
-    protected long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration,
-                                      String rating, Set<Long> genres) throws Exception {
-        String payload = filmJson(name, description, releaseDate, duration, rating, genres);
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("name", name);
+        body.put("description", description);
+        body.put("releaseDate", releaseDate.toString());
+        body.put("duration", duration);
 
-        String resp = mockMvc.perform(
-                        MockMvcRequestBuilders.post("/films")
-                                .contentType(json)
-                                .content(payload)
-                )
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", mpaId);
+        body.set("mpa", mpa);
+
+        ArrayNode genres = objectMapper.createArrayNode();
+        if (genreIds != null) {
+            for (Long gid : genreIds) {
+                ObjectNode g = objectMapper.createObjectNode();
+                g.put("id", gid);
+                genres.add(g);
+            }
+        }
+        body.set("genres", genres);
+
+        MvcResult res = mockMvc.perform(post("/films")
+                        .contentType(json)
+                        .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$.id").exists())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+                .andReturn();
 
-        JsonNode node = objectMapper.readTree(resp);
-        return node.get("id").asLong();
+        return objectMapper.readTree(res.getResponse().getContentAsString()).get("id").asLong();
     }
 
     protected String filmJson(String name, String description, LocalDate releaseDate, Integer duration,

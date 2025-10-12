@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class FilmControllerTest extends BaseControllerTest {
@@ -19,69 +20,69 @@ class FilmControllerTest extends BaseControllerTest {
     void createFilm_ok() throws Exception {
         long id = createFilmAndGetId(
                 "Inception", "d", LocalDate.of(2010, 7, 16), 148,
-                "PG-13", new LinkedHashSet<>(Set.of(1L, 4L))
+                3, new LinkedHashSet<>(Set.of(1L, 4L)) // PG-13, Комедия+Триллер
         );
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/films/{id}", id))
+        mockMvc.perform(get("/films/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.name").value("Inception"))
-                .andExpect(jsonPath("$.rating").value("PG-13"))
+                .andExpect(jsonPath("$.mpa.id").value(3))
+                .andExpect(jsonPath("$.mpa.name").value("PG-13"))
                 .andExpect(jsonPath("$.genres.length()").value(2))
-                .andExpect(jsonPath("$.genres[0]").value(1))
-                .andExpect(jsonPath("$.genres[1]").value(4));
+                .andExpect(jsonPath("$.genres[0].id").value(1))
+                .andExpect(jsonPath("$.genres[1].id").value(4));
     }
 
-    //Validation: create
+    // Validation: create
 
     @Test
-    void createFilm_invalidRating_shouldReturn404() throws Exception {
+    void createFilm_invalidMpa_shouldReturn404() throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "n");
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        body.put("rating", "pg-13"); // ❌ строгое соответствие нарушено
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 999); // несуществующий MPA
+        body.set("mpa", mpa);
         ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        arr.add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void createFilm_missingRating_shouldReturn404() throws Exception {
+    void createFilm_missingMpa_shouldReturn400() throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "n");
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void createFilm_emptyGenres_shouldFail() throws Exception {
+    void createFilm_emptyGenres_ok() throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "n");
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        body.put("rating", "PG");
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2); // PG
+        body.set("mpa", mpa);
         body.putArray("genres"); // пусто
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(json))
+                .andExpect(jsonPath("$.genres.length()").value(0));
     }
 
     @Test
@@ -91,13 +92,13 @@ class FilmControllerTest extends BaseControllerTest {
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        body.put("rating", "PG");
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2); // PG
+        body.set("mpa", mpa);
         ArrayNode arr = body.putArray("genres");
-        arr.add(999L);
+        arr.add(objectMapper.createObjectNode().put("id", 999)); // нет такого жанра
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isNotFound());
     }
 
@@ -108,13 +109,12 @@ class FilmControllerTest extends BaseControllerTest {
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        body.put("rating", "PG");
-        ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2);
+        body.set("mpa", mpa);
+        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -122,16 +122,15 @@ class FilmControllerTest extends BaseControllerTest {
     void createFilm_descriptionTooLong_shouldFail() throws Exception {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("name", "n");
-        body.put("description", "x".repeat(201)); // >200
+        body.put("description", "x".repeat(201));
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 100);
-        body.put("rating", "PG");
-        ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2);
+        body.set("mpa", mpa);
+        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -142,13 +141,12 @@ class FilmControllerTest extends BaseControllerTest {
         body.put("description", "d");
         body.put("releaseDate", "1895-12-27");
         body.put("duration", 100);
-        body.put("rating", "PG");
-        ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2);
+        body.set("mpa", mpa);
+        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
@@ -159,60 +157,61 @@ class FilmControllerTest extends BaseControllerTest {
         body.put("description", "d");
         body.put("releaseDate", "2000-01-01");
         body.put("duration", 0);
-        body.put("rating", "PG");
-        ArrayNode arr = body.putArray("genres");
-        arr.add(1L);
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 2);
+        body.set("mpa", mpa);
+        body.putArray("genres").add(objectMapper.createObjectNode().put("id", 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/films")
-                        .contentType(json)
-                        .content(objectMapper.writeValueAsString(body)))
+        mockMvc.perform(post("/films").contentType(json).content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isBadRequest());
     }
 
-    //Update
+    // Update
 
     @Test
-    void updateFilm_updateRatingAndGenres_ok() throws Exception {
+    void updateFilm_updateMpaAndGenres_ok() throws Exception {
         long id = createFilmAndGetId(
                 "A", "d", LocalDate.of(2000,1,1), 100,
-                "PG", new LinkedHashSet<>(Set.of(1L))
+                2, new LinkedHashSet<>(Set.of(1L))
         );
 
         ObjectNode upd = objectMapper.createObjectNode();
         upd.put("id", id);
         upd.put("name", "A1");
-        upd.put("rating", "R");
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", 4); // R
+        upd.set("mpa", mpa);
         ArrayNode arr = upd.putArray("genres");
-        arr.add(4L); // Триллер
-        arr.add(6L); // Боевик
+        arr.add(objectMapper.createObjectNode().put("id", 4)); // Триллер
+        arr.add(objectMapper.createObjectNode().put("id", 6)); // Боевик
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/films")
+        mockMvc.perform(put("/films")
                         .contentType(json)
                         .content(objectMapper.writeValueAsString(upd)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id))
                 .andExpect(jsonPath("$.name").value("A1"))
-                .andExpect(jsonPath("$.rating").value("R"))
+                .andExpect(jsonPath("$.mpa.id").value(4))
+                .andExpect(jsonPath("$.mpa.name").value("R"))
                 .andExpect(jsonPath("$.genres.length()").value(2))
-                .andExpect(jsonPath("$.genres[0]").value(4))
-                .andExpect(jsonPath("$.genres[1]").value(6));
+                .andExpect(jsonPath("$.genres[0].id").value(4))
+                .andExpect(jsonPath("$.genres[1].id").value(6));
     }
 
-    //Likes
+    // Likes
 
     @Test
     void addLike_ok() throws Exception {
         long filmId = createFilmAndGetId(
                 "Blade Runner", "desc", LocalDate.of(1982, 6, 25), 117,
-                "R", new LinkedHashSet<>(Set.of(4L))
+                4, new LinkedHashSet<>(Set.of(4L))
         );
         long userId = createUserAndGetId("deckard@example.com", "deckard", "Deckard", LocalDate.of(1980, 1, 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+        mockMvc.perform(put("/films/{id}/like/{userId}", filmId, userId))
                 .andExpect(status().isOk());
 
-        // идемпотентность
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+        mockMvc.perform(put("/films/{id}/like/{userId}", filmId, userId))
                 .andExpect(status().isOk());
     }
 
@@ -220,39 +219,37 @@ class FilmControllerTest extends BaseControllerTest {
     void removeLike_ok() throws Exception {
         long filmId = createFilmAndGetId(
                 "Inception", "desc", LocalDate.of(2010, 7, 16), 148,
-                "PG-13", new LinkedHashSet<>(Set.of(4L))
+                3, new LinkedHashSet<>(Set.of(4L))
         );
         long userId = createUserAndGetId("cobb@example.com", "cobb", "Cobb", LocalDate.of(1990, 1, 1));
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", filmId, userId))
+        mockMvc.perform(put("/films/{id}/like/{userId}", filmId, userId))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))
+        mockMvc.perform(delete("/films/{id}/like/{userId}", filmId, userId))
                 .andExpect(status().isOk());
 
-        // повторный DELETE — идемпотентен
-        mockMvc.perform(MockMvcRequestBuilders.delete("/films/{id}/like/{userId}", filmId, userId))
+        mockMvc.perform(delete("/films/{id}/like/{userId}", filmId, userId))
                 .andExpect(status().isOk());
     }
 
-    //Popular
+    // Popular
 
     @Test
     void getTopFilms_ok() throws Exception {
-        long a = createFilmAndGetId("A", "d", LocalDate.of(2000,1,1), 100, "PG", new LinkedHashSet<>(Set.of(1L)));
-        long b = createFilmAndGetId("B", "d", LocalDate.of(2000,1,1), 100, "PG", new LinkedHashSet<>(Set.of(1L)));
-        long c = createFilmAndGetId("C", "d", LocalDate.of(2000,1,1), 100, "PG", new LinkedHashSet<>(Set.of(1L)));
+        long a = createFilmAndGetId("A", "d", LocalDate.of(2000,1,1), 100, 2, new LinkedHashSet<>(Set.of(1L)));
+        long b = createFilmAndGetId("B", "d", LocalDate.of(2000,1,1), 100, 2, new LinkedHashSet<>(Set.of(1L)));
+        long c = createFilmAndGetId("C", "d", LocalDate.of(2000,1,1), 100, 2, new LinkedHashSet<>(Set.of(1L)));
 
         long u1 = createUserAndGetId("a@ex.com", "a", "A", LocalDate.of(1990,1,1));
         long u2 = createUserAndGetId("b@ex.com", "b", "B", LocalDate.of(1990,1,1));
         long u3 = createUserAndGetId("c@ex.com", "c", "C", LocalDate.of(1990,1,1));
 
-        // A: 2 лайка, B: 1 лайк, C: 0
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", a, u1)).andExpect(status().isOk());
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", a, u2)).andExpect(status().isOk());
-        mockMvc.perform(MockMvcRequestBuilders.put("/films/{id}/like/{userId}", b, u3)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/{id}/like/{userId}", a, u1)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/{id}/like/{userId}", a, u2)).andExpect(status().isOk());
+        mockMvc.perform(put("/films/{id}/like/{userId}", b, u3)).andExpect(status().isOk());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular").param("count", "2"))
+        mockMvc.perform(get("/films/popular").param("count", "2"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
                 .andExpect(jsonPath("$.length()").value(2))
@@ -262,7 +259,7 @@ class FilmControllerTest extends BaseControllerTest {
 
     @Test
     void getTopFilms_countNonPositive_shouldFail() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/films/popular").param("count", "0"))
+        mockMvc.perform(get("/films/popular").param("count", "0"))
                 .andExpect(status().isBadRequest());
     }
 }
