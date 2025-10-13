@@ -49,7 +49,7 @@ public class UserController {
         return userService.getUserById(id);
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
+    @PutMapping("/{id}/friends/{friendId}") //users/31/friends/32
     public void addFriend(@PathVariable
                           @Positive(message = "id пользователя должен быть > 0")
                           Long id,

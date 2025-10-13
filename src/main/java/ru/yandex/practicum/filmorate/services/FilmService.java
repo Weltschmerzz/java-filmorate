@@ -6,28 +6,31 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class FilmService {
 
-    private final FilmStorage filmStorage;
-    private final DomainValidator<Film> validator = new FilmValidator();
+    private final FilmStorage filmStorage = new InMemoryFilmStorage();
+    private final DomainValidator<Film> validator = new FilmValidator(filmStorage);
     private final UserService userService;
 
     public Film create(Film film) {
         validator.validateCreate(film);
-        log.info("Запрос на создание фильма: {}", film);
-        return filmStorage.create(film);
+        Film normalized = normalize(film);
+        log.info("Запрос на создание фильма: {}", normalized);
+        return filmStorage.create(normalized);
     }
 
     public Collection<Film> findAll() {
@@ -54,24 +57,21 @@ public class FilmService {
             throw new ValidationException("id должен быть указан!");
         }
 
-        Film existedFilm = filmStorage.getById(newFilm.getId());
+        Film existedFilm = filmStorage.getById(id);
         if (Objects.isNull(existedFilm)) {
             throw new NotFoundException(String.format("Не найден фильм с id: %d", id));
         }
 
         validator.validateUpdate(newFilm);
 
-        if (newFilm.getName() != null) {
-            existedFilm.setName(newFilm.getName());
-        }
-        if (newFilm.getDescription() != null) {
-            existedFilm.setDescription(newFilm.getDescription());
-        }
-        if (newFilm.getReleaseDate() != null) {
-            existedFilm.setReleaseDate(newFilm.getReleaseDate());
-        }
-        if (newFilm.getDuration() != null) {
-            existedFilm.setDuration(newFilm.getDuration());
+        if (newFilm.getName() != null) existedFilm.setName(newFilm.getName());
+        if (newFilm.getDescription() != null) existedFilm.setDescription(newFilm.getDescription());
+        if (newFilm.getReleaseDate() != null) existedFilm.setReleaseDate(newFilm.getReleaseDate());
+        if (newFilm.getDuration() != null) existedFilm.setDuration(newFilm.getDuration());
+        if (newFilm.getGenres() != null) existedFilm.setGenres(normalizeGenres(newFilm.getGenres()));
+        if (newFilm.getMpa() != null) {
+            Mpa canon = filmStorage.getMpaById(newFilm.getMpa().getId());
+            existedFilm.setMpa(canon);
         }
 
         log.info("Обновлён фильм через сервис: {}", existedFilm);
@@ -138,5 +138,53 @@ public class FilmService {
     }
 
     public record LikeContext(Film film, User user) {
+    }
+
+    public Genre getGenre(Long id) {
+        if (filmStorage.getGenreById(id) == null) {
+            throw new NotFoundException("Жанр не найден id=" + id);
+        }
+        return filmStorage.getGenreById(id);
+    }
+
+    public Collection<Genre> getAllGener() {
+        return filmStorage.getAllGenres().values();
+    }
+
+    public Mpa getMpa(Long id) {
+        if (filmStorage.getMpaById(id) == null) {
+            throw new NotFoundException("MPA не найден id=" + id);
+        }
+        return filmStorage.getMpaById(id);
+    }
+
+    public Collection<Mpa> getAllMpa() {
+        return filmStorage.getAllMpa().values();
+    }
+
+    private Film normalize(Film film) {
+        Film copy = new Film();
+        copy.setId(film.getId());
+        copy.setName(film.getName());
+        copy.setDescription(film.getDescription());
+        copy.setReleaseDate(film.getReleaseDate());
+        copy.setDuration(film.getDuration());
+        if (film.getMpa() != null) {
+            copy.setMpa(filmStorage.getMpaById(film.getMpa().getId()));
+        }
+        copy.setGenres(normalizeGenres(film.getGenres()));
+        copy.setLikes(film.getLikes());
+        return copy;
+    }
+
+    private LinkedHashSet<Genre> normalizeGenres(Set<Genre> input) {
+        if (input == null || input.isEmpty()) return new LinkedHashSet<>();
+        return input.stream()
+                .filter(Objects::nonNull)
+                .map(g -> filmStorage.getGenreById(g.getId()))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toCollection(() -> new TreeSet<>(Comparator.comparingLong(Genre::getId))),
+                        LinkedHashSet::new
+                ));
     }
 }

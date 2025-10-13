@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +13,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -35,7 +39,6 @@ public abstract class BaseControllerTest {
 
     @BeforeEach
     void clean() throws Exception {
-        // Удаляем ВСЕ фильмы
         MvcResult filmsRes = mockMvc.perform(MockMvcRequestBuilders.get("/films"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -76,24 +79,59 @@ public abstract class BaseControllerTest {
         return node.get("id").asLong();
     }
 
-    public long createFilmAndGetId(String name, String description, LocalDate releaseDate, int duration) throws Exception {
-        Film f = new Film();
-        f.setName(name);
-        f.setDescription(description);
-        f.setReleaseDate(releaseDate);
-        f.setDuration(duration);
+    protected long createFilmAndGetId(
+            String name,
+            String description,
+            LocalDate releaseDate,
+            int duration,
+            int mpaId,
+            LinkedHashSet<Long> genreIds
+    ) throws Exception {
 
-        MvcResult res = mockMvc.perform(
-                        MockMvcRequestBuilders.post("/films")
-                                .contentType(json)
-                                .content(toJson(f))
-                )
+        ObjectNode body = objectMapper.createObjectNode();
+        body.put("name", name);
+        body.put("description", description);
+        body.put("releaseDate", releaseDate.toString());
+        body.put("duration", duration);
+
+        ObjectNode mpa = objectMapper.createObjectNode();
+        mpa.put("id", mpaId);
+        body.set("mpa", mpa);
+
+        ArrayNode genres = objectMapper.createArrayNode();
+        if (genreIds != null) {
+            for (Long gid : genreIds) {
+                ObjectNode g = objectMapper.createObjectNode();
+                g.put("id", gid);
+                genres.add(g);
+            }
+        }
+        body.set("genres", genres);
+
+        MvcResult res = mockMvc.perform(post("/films")
+                        .contentType(json)
+                        .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$.id").exists())
                 .andReturn();
 
-        JsonNode node = objectMapper.readTree(res.getResponse().getContentAsString());
-        return node.get("id").asLong();
+        return objectMapper.readTree(res.getResponse().getContentAsString()).get("id").asLong();
+    }
+
+    protected String filmJson(String name, String description, LocalDate releaseDate, Integer duration,
+                              String rating, Set<Long> genres) throws Exception {
+        ObjectNode node = objectMapper.createObjectNode();
+        if (name != null) node.put("name", name);
+        if (description != null) node.put("description", description);
+        if (releaseDate != null) node.put("releaseDate", releaseDate.toString());
+        if (duration != null) node.put("duration", duration);
+        if (rating != null) node.put("rating", rating);
+        if (genres != null) {
+            ArrayNode arr = node.putArray("genres");
+            for (Long id : genres) {
+                if (id == null) arr.addNull(); else arr.add(id);
+            }
+        }
+        return objectMapper.writeValueAsString(node);
     }
 }
