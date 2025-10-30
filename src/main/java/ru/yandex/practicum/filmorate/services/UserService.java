@@ -106,16 +106,13 @@ public class UserService {
         User friend = userStorage.getById(friendId);
 
         boolean update1 = user.getFriends().add(friendId);
-        boolean update2 = friend.getFriends().add(userId);
+
 
         if (update1) {
             userStorage.setFriendConnection(userId, friendId, FriendshipStatus.CONFIRMED);
             userStorage.update(user);
         }
-        if (update2) {
-            userStorage.setFriendConnection(friendId, userId, FriendshipStatus.CONFIRMED);
-            userStorage.update(friend);
-        }
+
         log.info("Пользователь {}, добавил в друзья пользователя {}", user.getId(), friend.getId());
     }
 
@@ -128,16 +125,13 @@ public class UserService {
         User friend = userStorage.getById(friendId);
 
         boolean update1 = user.getFriends().remove(friendId);
-        boolean update2 = friend.getFriends().remove(userId);
+
 
         if (update1) {
             userStorage.removeFriendConnection(userId, friendId);
             userStorage.update(user);
         }
-        if (update2) {
-            userStorage.removeFriendConnection(friendId, userId);
-            userStorage.update(friend);
-        }
+
         log.info("Пользователь {}, удалил из друзей пользователя {}", user.getId(), friend.getId());
     }
 

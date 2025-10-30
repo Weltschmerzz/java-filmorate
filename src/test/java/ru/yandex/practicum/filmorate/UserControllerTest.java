@@ -125,7 +125,6 @@ class UserControllerTest extends BaseControllerTest {
                         .content(toJson(u2))
         ).andExpect(status().isCreated());
 
-        // просто проверяем, что /users отдаёт массив с минимум двумя элементами
         mockMvc.perform(MockMvcRequestBuilders.get("/users"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
