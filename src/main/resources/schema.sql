@@ -21,23 +21,23 @@ CREATE TABLE IF NOT EXISTS friend_status
 CREATE TABLE IF NOT EXISTS users
 (
     id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    email      VARCHAR(255)                        NOT NULL UNIQUE,
-    login      VARCHAR(100)                        NOT NULL UNIQUE,
+    email      VARCHAR(255) NOT NULL UNIQUE,
+    login      VARCHAR(100) NOT NULL UNIQUE,
     name       VARCHAR(255),
     birthday   DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-    updated_at TIMESTAMP NULL
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    updated_at TIMESTAMP    NULL
 );
 
 CREATE TABLE IF NOT EXISTS films
 (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name         VARCHAR(255)                        NOT NULL,
+    name         VARCHAR(255) NOT NULL,
     description  VARCHAR(1500),
-    release_date DATE                                NOT NULL,
-    duration     INT                                 NOT NULL CHECK (duration > 0),
-    mpa_id       INT                                 NOT NULL,
-    created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(),
+    release_date DATE         NOT NULL,
+    duration     INT          NOT NULL CHECK (duration > 0),
+    mpa_id       INT          NOT NULL,
+    created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP(),
     updated_at   TIMESTAMP,
     CONSTRAINT fk_films_mpa FOREIGN KEY (mpa_id) REFERENCES mpa (id)
 );

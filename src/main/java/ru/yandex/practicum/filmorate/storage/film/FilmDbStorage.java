@@ -21,11 +21,11 @@ public class FilmDbStorage implements FilmStorage {
     private final FilmRowMapper filmRowMapper;
 
     private static final String SQL_SELECT_FILM_BASE = """
-    SELECT f.id, f.name, f.description, f.release_date, f.duration,
-           m.id AS mpa_id, m.name AS mpa_name
-    FROM films f
-    JOIN mpa m ON m.id = f.mpa_id
-    """;
+            SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                   m.id AS mpa_id, m.name AS mpa_name
+            FROM films f
+            JOIN mpa m ON m.id = f.mpa_id
+            """;
 
     private static final String SQL_FIND_ALL_FILMS = SQL_SELECT_FILM_BASE + " ORDER BY f.id";
 
@@ -75,10 +75,10 @@ public class FilmDbStorage implements FilmStorage {
             "DELETE FROM film_likes WHERE film_id = ?";
 
     private static final String SQL_MERGE_FILM_LIKE = """
-        MERGE INTO film_likes (film_id, user_id)
-        KEY (film_id, user_id)
-        VALUES (?, ?)
-        """;
+            MERGE INTO film_likes (film_id, user_id)
+            KEY (film_id, user_id)
+            VALUES (?, ?)
+            """;
 
     //CRUD
 
@@ -92,12 +92,18 @@ public class FilmDbStorage implements FilmStorage {
 
             // лайки
             jdbc.query(SQL_LOAD_LIKES_BY_FILM_ID,
-                    (rs, rn) -> { film.getLikes().add(rs.getLong("user_id")); return null; },
+                    (rs, rn) -> {
+                        film.getLikes().add(rs.getLong("user_id"));
+                        return null;
+                    },
                     id);
 
             // жанры
             jdbc.query(SQL_LOAD_GENRES_BY_FILM_ID,
-                    (rs, rn) -> { film.getGenres().add(new Genre(rs.getLong("genre_id"), rs.getString("genre_name"))); return null; },
+                    (rs, rn) -> {
+                        film.getGenres().add(new Genre(rs.getLong("genre_id"), rs.getString("genre_name")));
+                        return null;
+                    },
                     id);
         }
         return films;
@@ -170,7 +176,7 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     @Transactional
     public void deleteById(Long id) {
-        jdbc.update(SQL_DELETE_FILM_GENRES, id); // на всякий случай; есть ON DELETE CASCADE, но это безопасно
+        jdbc.update(SQL_DELETE_FILM_GENRES, id);
         jdbc.update(SQL_DELETE_FILM_BY_ID, id);
     }
 
