@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
@@ -16,11 +17,14 @@ import java.util.*;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private final UserStorage userStorage;
     private final DomainValidator<User> validator = new UserValidator();
+
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
+        this.userStorage = userStorage;
+    }
 
     public User create(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
