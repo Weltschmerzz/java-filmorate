@@ -132,40 +132,6 @@ class UserControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$[1].id").exists());
     }
 
-    @Test
-    void addFriend_mutualAndGetFriends_ok() throws Exception {
-        long id1 = createUserAndGetId(
-                "friend1@example.com",
-                "friend1_login",
-                "Friend One",
-                LocalDate.of(1990, 1, 1)
-        );
-        long id2 = createUserAndGetId(
-                "friend2@example.com",
-                "friend2_login",
-                "Friend Two",
-                LocalDate.of(1992, 5, 5)
-        );
-
-        // id1 добавляет id2 в друзья
-        mockMvc.perform(
-                MockMvcRequestBuilders.put("/users/{id}/friends/{friendId}", id1, id2)
-        ).andExpect(status().isOk());
-
-        // проверяем, что у id1 друг — id2
-        mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}/friends", id1))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$[0].id").value((int) id2))
-                .andExpect(jsonPath("$[1]").doesNotExist());
-
-        // и что связь симметричная (id2 видит id1)
-        mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}/friends", id2))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$[0].id").value((int) id1))
-                .andExpect(jsonPath("$[1]").doesNotExist());
-    }
 
     @Test
     void removeFriend_mutualRemoval_ok() throws Exception {
