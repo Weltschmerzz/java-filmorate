@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.services;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.validation.DomainValidator;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
@@ -19,12 +18,19 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class FilmService {
 
-    private final FilmStorage filmStorage = new InMemoryFilmStorage();
-    private final DomainValidator<Film> validator = new FilmValidator(filmStorage);
+    private final FilmStorage filmStorage;
+    private final DomainValidator<Film> validator;
     private final UserService userService;
+
+    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       UserService userService,
+                       FilmValidator validator) {
+        this.filmStorage = filmStorage;
+        this.userService = userService;
+        this.validator = validator;
+    }
 
     public Film create(Film film) {
         validator.validateCreate(film);

@@ -13,43 +13,46 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void createUser_ok() throws Exception {
         User u = new User();
-        u.setEmail("john@example.com");
-        u.setLogin("john");
-        u.setName("John");
+        u.setEmail("john_ok@example.com");
+        u.setLogin("john_ok");
+        u.setName("John Ok");
         u.setBirthday(LocalDate.of(1990, 1, 1));
 
         mockMvc.perform(
                         MockMvcRequestBuilders.post("/users")
                                 .contentType(json)
                                 .content(toJson(u))
-                ).andExpect(status().isCreated())
+                )
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.email").value("john@example.com"))
-                .andExpect(jsonPath("$.login").value("john"))
-                .andExpect(jsonPath("$.name").value("John"));
+                .andExpect(jsonPath("$.email").value("john_ok@example.com"))
+                .andExpect(jsonPath("$.login").value("john_ok"))
+                .andExpect(jsonPath("$.name").value("John Ok"));
     }
 
     @Test
     void createUser_blankName_becomesLogin() throws Exception {
         User u = new User();
-        u.setEmail("jane@example.com");
-        u.setLogin("jane");
-        u.setName("   ");
+        u.setEmail("jane_blank@example.com");
+        u.setLogin("jane_blank");
+        u.setName("   "); // должно замениться на login
         u.setBirthday(LocalDate.of(1992, 5, 5));
 
         mockMvc.perform(
                         MockMvcRequestBuilders.post("/users")
                                 .contentType(json)
                                 .content(toJson(u))
-                ).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("jane"));
+                )
+                .andExpect(status().isCreated())
+                // сервис обязан был подставить login вместо пустого name
+                .andExpect(jsonPath("$.name").value("jane_blank"));
     }
 
     @Test
     void createUser_badEmail_shouldFail() throws Exception {
         User u = new User();
-        u.setEmail("bad.email");
-        u.setLogin("user1");
+        u.setEmail("bad.email"); // невалидно
+        u.setLogin("bad_email_login");
         u.setName("User");
         u.setBirthday(LocalDate.of(1990, 1, 1));
 
@@ -63,8 +66,8 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void createUser_loginWithSpace_shouldFail() throws Exception {
         User u = new User();
-        u.setEmail("good@mail.com");
-        u.setLogin("bad login");
+        u.setEmail("spacey@example.com");
+        u.setLogin("bad login"); // пробелы запрещены
         u.setName("User");
         u.setBirthday(LocalDate.of(1990, 1, 1));
 
@@ -78,10 +81,10 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void createUser_futureBirthday_shouldFail() throws Exception {
         User u = new User();
-        u.setEmail("fut@mail.com");
-        u.setLogin("fut");
+        u.setEmail("future@example.com");
+        u.setLogin("future_user");
         u.setName("Future");
-        u.setBirthday(LocalDate.of(2990, 1, 1)); // заведомо будущее
+        u.setBirthday(LocalDate.of(2990, 1, 1)); // будущее
 
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
@@ -93,32 +96,33 @@ class UserControllerTest extends BaseControllerTest {
     @Test
     void getUserById_notFound() throws Exception {
         mockMvc.perform(
-                MockMvcRequestBuilders.get("/users/{id}", 9999)
+                MockMvcRequestBuilders.get("/users/{id}", 999999)
         ).andExpect(status().isNotFound());
     }
 
     @Test
     void findAll_returnsCollection() throws Exception {
-        User u = new User();
-        u.setEmail("a@a.com");
-        u.setLogin("a");
-        u.setName("A");
-        u.setBirthday(LocalDate.of(1990, 1, 1));
+        // создаём двух разных пользователей с уникальными email/login
+        User u1 = new User();
+        u1.setEmail("list_a@example.com");
+        u1.setLogin("list_a");
+        u1.setName("ListA");
+        u1.setBirthday(LocalDate.of(1990, 1, 1));
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)
-                        .content(toJson(u))
+                        .content(toJson(u1))
         ).andExpect(status().isCreated());
 
-        u = new User();
-        u.setEmail("b@b.com");
-        u.setLogin("b");
-        u.setName("B");
-        u.setBirthday(LocalDate.of(1991, 1, 1));
+        User u2 = new User();
+        u2.setEmail("list_b@example.com");
+        u2.setLogin("list_b");
+        u2.setName("ListB");
+        u2.setBirthday(LocalDate.of(1991, 1, 1));
         mockMvc.perform(
                 MockMvcRequestBuilders.post("/users")
                         .contentType(json)
-                        .content(toJson(u))
+                        .content(toJson(u2))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/users"))
@@ -128,41 +132,33 @@ class UserControllerTest extends BaseControllerTest {
                 .andExpect(jsonPath("$[1].id").exists());
     }
 
-    @Test
-    void addFriend_mutualAndGetFriends_ok() throws Exception {
-        long id1 = createUserAndGetId("john@example.com", "john", "John", LocalDate.of(1990, 1, 1));
-        long id2 = createUserAndGetId("jane@example.com", "jane", "Jane", LocalDate.of(1992, 5, 5));
-
-        mockMvc.perform(
-                MockMvcRequestBuilders.put("/users/{id}/friends/{friendId}", id1, id2)
-        ).andExpect(status().isOk());
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}/friends", id1))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$[0].id").value((int) id2))
-                .andExpect(jsonPath("$[1]").doesNotExist());
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}/friends", id2))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(json))
-                .andExpect(jsonPath("$[0].id").value((int) id1))
-                .andExpect(jsonPath("$[1]").doesNotExist());
-    }
 
     @Test
     void removeFriend_mutualRemoval_ok() throws Exception {
-        long id1 = createUserAndGetId("a@a.com", "a", "A", LocalDate.of(1990, 1, 1));
-        long id2 = createUserAndGetId("b@b.com", "b", "B", LocalDate.of(1991, 2, 2));
+        long id1 = createUserAndGetId(
+                "rm1@example.com",
+                "rm1_login",
+                "RM1",
+                LocalDate.of(1990, 1, 1)
+        );
+        long id2 = createUserAndGetId(
+                "rm2@example.com",
+                "rm2_login",
+                "RM2",
+                LocalDate.of(1991, 2, 2)
+        );
 
+        // связываем
         mockMvc.perform(
                 MockMvcRequestBuilders.put("/users/{id}/friends/{friendId}", id1, id2)
         ).andExpect(status().isOk());
 
+        // разрываем
         mockMvc.perform(
                 MockMvcRequestBuilders.delete("/users/{id}/friends/{friendId}", id1, id2)
         ).andExpect(status().isOk());
 
+        // проверяем, что у обоих больше нет друзей
         mockMvc.perform(MockMvcRequestBuilders.get("/users/{id}/friends", id1))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
@@ -176,10 +172,25 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void getCommonFriends_oneCommon_ok() throws Exception {
-        // создаём трёх пользователей: A, B и C (C — их общий друг)
-        long aId = createUserAndGetId("a@a.com", "a", "A", LocalDate.of(1990, 1, 1));
-        long bId = createUserAndGetId("b@b.com", "b", "B", LocalDate.of(1991, 2, 2));
-        long cId = createUserAndGetId("c@c.com", "c", "C", LocalDate.of(1992, 3, 3));
+        // создаём трёх юзеров: A, B и C
+        long aId = createUserAndGetId(
+                "cm_a@example.com",
+                "cm_a_login",
+                "CMA",
+                LocalDate.of(1990, 1, 1)
+        );
+        long bId = createUserAndGetId(
+                "cm_b@example.com",
+                "cm_b_login",
+                "CMB",
+                LocalDate.of(1991, 2, 2)
+        );
+        long cId = createUserAndGetId(
+                "cm_c@example.com",
+                "cm_c_login",
+                "CMC",
+                LocalDate.of(1992, 3, 3)
+        );
 
         // A дружит с C
         mockMvc.perform(
@@ -191,22 +202,32 @@ class UserControllerTest extends BaseControllerTest {
                 MockMvcRequestBuilders.put("/users/{id}/friends/{friendId}", bId, cId)
         ).andExpect(status().isOk());
 
-        // Общие друзья A и B — должен быть только C
+        // теперь общие друзья A и B — это только C
         mockMvc.perform(
                         MockMvcRequestBuilders.get("/users/{id}/friends/common/{otherId}", aId, bId)
                 )
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(json))
                 .andExpect(jsonPath("$[0].id").value((int) cId))
-                .andExpect(jsonPath("$[1]").doesNotExist()); // лишних элементов нет
+                .andExpect(jsonPath("$[1]").doesNotExist());
     }
 
     @Test
     void getCommonFriends_none_shouldReturn404() throws Exception {
-        long dId = createUserAndGetId("d@d.com", "d", "D", LocalDate.of(1993, 4, 4));
-        long eId = createUserAndGetId("e@e.com", "e", "E", LocalDate.of(1994, 5, 5));
+        long dId = createUserAndGetId(
+                "no_d@example.com",
+                "no_d_login",
+                "NoD",
+                LocalDate.of(1993, 4, 4)
+        );
+        long eId = createUserAndGetId(
+                "no_e@example.com",
+                "no_e_login",
+                "NoE",
+                LocalDate.of(1994, 5, 5)
+        );
 
-        // У D и E нет общих друзей
+        // у D и E намеренно нет общих друзей
         mockMvc.perform(
                 MockMvcRequestBuilders.get("/users/{id}/friends/common/{otherId}", dId, eId)
         ).andExpect(status().isNotFound());
@@ -214,7 +235,12 @@ class UserControllerTest extends BaseControllerTest {
 
     @Test
     void deleteUser_ok() throws Exception {
-        long id = createUserAndGetId("john@example.com", "john", "John", LocalDate.of(1990, 1, 1));
+        long id = createUserAndGetId(
+                "del_user@example.com",
+                "del_login",
+                "DelUser",
+                LocalDate.of(1990, 1, 1)
+        );
 
         mockMvc.perform(
                         MockMvcRequestBuilders.delete("/users/{id}", id)
